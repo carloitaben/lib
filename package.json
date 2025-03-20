@@ -1,0 +1,17 @@
+{
+  "name": "lib",
+  "private": true,
+  "version": "1.0.0",
+  "license": "MIT",
+  "packageManager": "pnpm@9.14.2",
+  "scripts": {
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.8"
+  },
+  "dependencies": {
+    "ts-deepmerge": "^7.0.2"
+  }
+}
