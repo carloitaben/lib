@@ -1,6 +1,6 @@
-export type AttemptSuccess<Value> = {
+export type AttemptSuccess<Data> = {
   success: true
-  value: Value
+  data: Data
 }
 
 export type AttemptError = {
@@ -8,16 +8,16 @@ export type AttemptError = {
   error: unknown
 }
 
-export type Attempt<Value> = AttemptSuccess<Value> | AttemptError
+export type Attempt<Data> = AttemptSuccess<Data> | AttemptError
 
-export function isSuccessfulAttempt<Value>(
-  attempt: Attempt<Value>
-): attempt is AttemptSuccess<Value> {
+export function isSuccessfulAttempt<Data>(
+  attempt: Attempt<Data>
+): attempt is AttemptSuccess<Data> {
   return attempt.success === true
 }
 
-export function isFailedAttempt<Value>(
-  attempt: Attempt<Value>
+export function isFailedAttempt<Data>(
+  attempt: Attempt<Data>
 ): attempt is AttemptError {
   return attempt.success === false
 }
@@ -38,20 +38,23 @@ export function isFailedAttempt<Value>(
  * }
  * ```
  */
-function resolve<Value>(value: Value): unknown {
-  if (value instanceof Promise) {
-    return value
+function resolve<Data>(data: Data): unknown {
+  if (data instanceof Promise) {
+    return data
       .then((value) => resolve(value))
-      .catch((error) => ({
-        success: false,
-        error,
-      }))
+      .catch(
+        (error) =>
+          ({
+            success: false,
+            error,
+          } satisfies AttemptError)
+      )
   }
 
   return {
     success: true,
-    value,
-  }
+    data,
+  } satisfies AttemptSuccess<Data>
 }
 
 export function attempt<Result>(

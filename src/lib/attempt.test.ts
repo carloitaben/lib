@@ -1,51 +1,53 @@
-import { describe, expect, test, vi } from "vitest"
+import { describe, expect, expectTypeOf, test, vi } from "vitest"
 import type { AttemptError, AttemptSuccess } from "./attempt"
 import { attempt } from "./attempt"
 
 describe(attempt.name, () => {
-  function mock(a: number, b: number) {
-    if (!a && !b) {
+  const mock = vi.fn((boom: boolean) => {
+    if (Boolean(boom)) {
       throw Error()
     }
 
-    return a + b
-  }
+    return boom
+  })
 
-  function asyncMock(a: number, b: number) {
-    return new Promise<number>((resolve) => {
+  const mockAsync = vi.fn((boom: boolean) => {
+    return new Promise<boolean>((resolve) => {
       resolve(
-        new Promise<number>((resolve, reject) => {
-          if (!a && !b) {
+        new Promise<boolean>((resolve, reject) => {
+          if (Boolean(boom)) {
             reject(new Error())
           } else {
-            resolve(a + b)
+            resolve(boom)
           }
         })
       )
     })
-  }
+  })
 
   test("sync error", () => {
-    const result = attempt(() => mock(0, 0))
+    const result = attempt(() => mock(true))
+    expect(mock).toHaveBeenCalled()
     expect(result.success).toBe(false)
     expect((result as AttemptError).error).toBeInstanceOf(Error)
   })
 
   test("sync success", () => {
-    const result = attempt(() => mock(1, 1))
+    const result = attempt(() => mock(false))
+    expect(mock).toHaveBeenCalled()
     expect(result.success).toBe(true)
-    expect((result as AttemptSuccess<number>).value).toBe(2)
+    expect((result as AttemptSuccess<boolean>).data).toBe(true)
   })
 
   test("async error", async () => {
-    const result = await attempt(() => asyncMock(0, 0))
+    const result = await attempt(() => mockAsync(true))
     expect(result.success).toBe(false)
     expect((result as AttemptError).error).toBeInstanceOf(Error)
   })
 
   test("async success", async () => {
-    const result = await attempt(() => asyncMock(1, 1))
+    const result = await attempt(() => mockAsync(false))
     expect(result.success).toBe(true)
-    expect((result as AttemptSuccess<number>).value).toBe(2)
+    expect((result as AttemptSuccess<boolean>).data).toBe(true)
   })
 })
