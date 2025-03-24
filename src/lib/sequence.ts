@@ -12,7 +12,11 @@ export type SequenceEventMap = {
 export type SequenceEvent<Key extends keyof SequenceEventMap> =
   SequenceEventMap[Key]
 
-export type SequenceStepCallbackContext<Context extends unknown = never> = {
+export type SequenceRunOptions = {
+  signal?: AbortSignal
+}
+
+export type SequenceStepCallbackContext = {
   /**
    * The currently executing step function index.
    */
@@ -38,16 +42,10 @@ export type SequenceStepCallbackContext<Context extends unknown = never> = {
    * Interrupts the currently executing step function and runs the function with the specified label.
    */
   jump(to: string): never
-} & (Context extends never
-  ? {
-      context?: never
-    }
-  : {
-      context: Context
-    })
+}
 
-export type SequenceStepCallback<Context extends unknown = never> = (
-  context: SequenceStepCallbackContext<Context>
+export type SequenceStepCallback = (
+  context: SequenceStepCallbackContext
 ) => void | Promise<void>
 
 export class SequenceJumpError extends Error {
@@ -66,9 +64,6 @@ export class SequenceStopError extends Error {
   }
 }
 
-/**
- * TODO: document
- */
 export function isSequenceError(
   error: unknown
 ): error is SequenceJumpError | SequenceStopError {
@@ -87,33 +82,29 @@ export function isSequenceError(
  *   .step(() => console.log(2))
  *
  * await sequence.run()
+ * // logs "0"
+ * // logs "1"
+ * // logs "2"
  * ```
  *
- * Each sequence callback receives a `SequenceStepCallbackContext<Context>` object
+ * Each sequence callback receives a `SequenceStepCallbackContext` object
  * with methods for interacting with the sequence execution.
- *
- * @example
- * Skipping steps
- *
- *
  */
-export class Sequence<Context extends unknown = never> {
+export class Sequence {
+  constructor() {}
+
   private steps: Function[] = []
+
   private stepsLabelIndexMap = new Map<string, number>()
 
-  /**
-   * TODO: document overload without context
-   */
-  constructor(context?: never)
+  private async runStep(
+    index: number,
+    options: SequenceRunOptions
+  ): Promise<void> {
+    if (options.signal?.aborted) {
+      return
+    }
 
-  /**
-   * TODO: document overload with context
-   */
-  constructor(context: Context)
-
-  constructor(private context: Context) {}
-
-  private async runStep(index: number, context: Context): Promise<void> {
     const stepFunction = this.steps[index]
 
     if (!stepFunction) {
@@ -124,7 +115,6 @@ export class Sequence<Context extends unknown = never> {
 
     const stepContext = {
       index,
-      context,
       stop: () => {
         throw new SequenceStopError()
       },
@@ -151,36 +141,30 @@ export class Sequence<Context extends unknown = never> {
 
         throw new SequenceJumpError(index)
       },
-    } as SequenceStepCallbackContext<Context>
+    } as SequenceStepCallbackContext
 
     try {
       await stepFunction(stepContext)
-      if (next !== null) await this.runStep(next, context)
+      if (next !== null) await this.runStep(next, options)
     } catch (error) {
       if (error instanceof SequenceStopError) return
 
       if (error instanceof SequenceJumpError) {
         if (error.to === null) return
-        return await this.runStep(error.to, context)
+        return await this.runStep(error.to, options)
       }
 
       throw error
     }
   }
 
-  /**
-   * TODO: document
-   */
-  public step(callback: SequenceStepCallback<Context>): this
+  public step(callback: SequenceStepCallback): this
 
-  /**
-   * TODO: document
-   */
-  public step(label: string, callback: SequenceStepCallback<Context>): this
+  public step(label: string, callback: SequenceStepCallback): this
 
   public step(
-    callbackOrLabel: SequenceStepCallback<Context> | string,
-    callback?: SequenceStepCallback<Context>
+    callbackOrLabel: SequenceStepCallback | string,
+    callback?: SequenceStepCallback
   ) {
     if (typeof callbackOrLabel === "string" && callback) {
       const length = this.steps.push(callback)
@@ -199,17 +183,7 @@ export class Sequence<Context extends unknown = never> {
     return this
   }
 
-  /**
-   * TODO: abort with AbortController
-   */
-  public async run(
-    options: {
-      context?: Context
-      signal?: AbortSignal
-    } = {}
-  ) {
-    const context = options.context ?? this.context
-    await this.runStep(0, context)
-    return context as Context extends never ? void : Context
+  public async run(options: SequenceRunOptions = {}) {
+    await this.runStep(0, options)
   }
 }

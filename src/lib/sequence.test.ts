@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest"
 import { Sequence } from "./sequence"
 
 describe(Sequence.name, () => {
-  test("runs step functions in sequence", async () => {
+  test("runs in sequence", async () => {
     let value = 0
 
     await new Sequence()
@@ -20,14 +20,14 @@ describe(Sequence.name, () => {
     expect(value).toBe(3)
   })
 
-  test("skips step functions", () => {
+  test("skips steps", () => {
     const sequence = new Sequence()
-      // Skip this one...
+      // (0) Skip this one...
       .step((context) => {
         context.skip()
         throw Error(context.index.toString())
       })
-      // ... go to last...
+      // (1) ... go to last...
       .step((context) => {
         context.jump(-1)
         throw Error(context.index.toString())
@@ -35,12 +35,12 @@ describe(Sequence.name, () => {
       .step((context) => {
         throw Error(context.index.toString())
       })
-      // And finally bail out
+      // (3) And finally bail out
       .step((context) => {
         context.stop()
         throw Error(context.index.toString())
       })
-      // ... then to the previous one...
+      // (2) ... then to the previous one...
       .step((context) => {
         context.back()
         throw Error(context.index.toString())
@@ -49,7 +49,7 @@ describe(Sequence.name, () => {
     expect(async () => await sequence.run()).not.toThrow()
   })
 
-  test("allows labelling step functions", () => {
+  test("labelled steps", () => {
     const sequence = new Sequence()
       .step("start", (context) => {
         context.jump("stop")
@@ -66,24 +66,22 @@ describe(Sequence.name, () => {
     expect(async () => await sequence.run()).not.toThrow()
   })
 
-  test("allows passing mutable context", async () => {
-    const context = {
-      current: 0,
-    }
+  test("aborts with AbortController", () => {
+    const abortController = new AbortController()
 
-    const result = await new Sequence(context)
-      .step(({ context, index }) => {
-        context.current = index
+    const sequence = new Sequence()
+      .step(() => {
+        abortController.abort()
       })
-      .step(({ context, index }) => {
-        context.current = index
+      .step(() => {
+        throw Error()
       })
-      .step(({ context, index }) => {
-        context.current = index
-      })
-      .run()
 
-    expect(result).toBe(context)
-    expect(result.current).toBe(2)
+    expect(
+      async () =>
+        await sequence.run({
+          signal: abortController.signal,
+        })
+    ).not.toThrow()
   })
 })
