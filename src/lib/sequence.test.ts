@@ -3,21 +3,21 @@ import { Sequence } from "./sequence"
 
 describe(Sequence.name, () => {
   test("runs in sequence", async () => {
-    let value = 0
+    let value = ""
 
     await new Sequence()
-      .step(() => {
-        value++
+      .step((context) => {
+        value += context.index.toString()
       })
-      .step(() => {
-        value++
+      .step((context) => {
+        value += context.index.toString()
       })
-      .step(() => {
-        value++
+      .step((context) => {
+        value += context.index.toString()
       })
       .run()
 
-    expect(value).toBe(3)
+    expect(value).toBe("012")
   })
 
   test("skips steps", () => {
