@@ -3,21 +3,21 @@ import { Sequence } from "./sequence"
 
 describe(Sequence.name, () => {
   test("runs in sequence", async () => {
-    let value = ""
+    const array: number[] = []
 
     await new Sequence()
       .step((context) => {
-        value += context.index.toString()
+        array.push(context.index)
       })
       .step((context) => {
-        value += context.index.toString()
+        array.push(context.index)
       })
       .step((context) => {
-        value += context.index.toString()
+        array.push(context.index)
       })
       .run()
 
-    expect(value).toBe("012")
+    expect(array).toEqual([0, 1, 2])
   })
 
   test("skips steps", () => {
