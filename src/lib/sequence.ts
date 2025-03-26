@@ -75,6 +75,8 @@ export function isSequenceError(
 /**
  * Executes functions in order.
  *
+ * @example
+ * Basic usage
  * ```ts
  * const sequence = new Sequence()
  *   .step(() => console.log(0))
@@ -87,8 +89,40 @@ export function isSequenceError(
  * // logs "2"
  * ```
  *
- * Each sequence callback receives a `SequenceStepCallbackContext` object
+ * @example
+ * Using context
+ * 
+ * Each sequence step receives a `SequenceStepCallbackContext` object
  * with methods for interacting with the sequence execution.
+ * 
+ * ```ts
+ * new Sequence()
+ *   .step((context) => {
+ *     context.skip()
+ *   })
+ *   .step((context) => {
+ *     context.stop()
+ *   })
+ * ```
+ * 
+ * @example
+ * Labelling sequence steps
+ * 
+ * ```ts
+ * const sequence = new Sequence()
+ *   .step((context) => {
+ *     context.jump("end")
+ *   })
+ *   .step(() => {
+ *     // ...
+ *   })
+ *   .step(() => {
+ *     // ...
+ *   })
+ *   .step("end", () => {
+ *     // ...
+ *   })
+ * ```
  */
 export class Sequence {
   constructor() {}
