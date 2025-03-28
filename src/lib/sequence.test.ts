@@ -20,7 +20,7 @@ describe(Sequence.name, () => {
     expect(array).toEqual([0, 1, 2])
   })
 
-  test("skips steps", () => {
+  test("short circuits when skipping steps", () => {
     const sequence = new Sequence()
       // (0) Skip this one...
       .step((context) => {
