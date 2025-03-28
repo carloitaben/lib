@@ -49,7 +49,7 @@ describe(Sequence.name, () => {
     expect(async () => await sequence.run()).not.toThrow()
   })
 
-  test("labelled steps", () => {
+  test("short circuits when skipping labelled steps", () => {
     const sequence = new Sequence()
       .step("start", (context) => {
         context.jump("stop")
