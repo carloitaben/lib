@@ -23,7 +23,7 @@ export function isFailedAttempt<Data>(
 }
 
 /**
- * Attempts to execute a function with the provided arguments.
+ * Attempts to synchronously execute a function.
  * If the function throws an error, it catches the error and returns it as a value,
  * similar to the [Errors as Values pattern](https://jessewarden.com/2021/04/errors-as-values.html).
  *
@@ -38,34 +38,48 @@ export function isFailedAttempt<Data>(
  * }
  * ```
  */
-function resolve<Data>(data: Data): unknown {
-  if (data instanceof Promise) {
-    return data
-      .then((value) => resolve(value))
-      .catch(
-        (error) =>
-          ({
-            success: false,
-            error,
-          } satisfies AttemptError)
-      )
+export function attempt<Result>(callback: () => Result): Attempt<Result> {
+  try {
+    const data = callback()
+    return { success: true, data }
+  } catch (error) {
+    return { success: false, error }
+  }
+}
+
+async function resolveAsync<Result>(
+  maybePromise: Result | Promise<Result>
+): Promise<Attempt<Result>> {
+  if (maybePromise instanceof Promise) {
+    return maybePromise
+      .then(resolveAsync)
+      .catch((error) => ({ success: false, error }))
   }
 
   return {
     success: true,
-    data,
-  } satisfies AttemptSuccess<Data>
+    data: maybePromise,
+  }
 }
 
-export function attempt<Result>(
-  callback: () => Result
-): Result extends Promise<infer V> ? Promise<Attempt<V>> : Attempt<Result> {
-  try {
-    return resolve(callback()) as any
-  } catch (error) {
-    return {
-      success: false,
-      error,
-    } as any
-  }
+/**
+ * Attempts to asynchronously execute a function.
+ * If the function throws an error, it catches the error and returns it as a value,
+ * similar to the [Errors as Values pattern](https://jessewarden.com/2021/04/errors-as-values.html).
+ *
+ * @example
+ * ```ts
+ * const result = await attemptAsync(async () => JSON.parse(data))
+ *
+ * if (result.success) {
+ *   result.data
+ * } else {
+ *   result.error
+ * }
+ * ```
+ */
+export function attemptAsync<Result>(
+  callback: () => Promise<Result>
+): Promise<Attempt<Result>> {
+  return resolveAsync(callback())
 }
