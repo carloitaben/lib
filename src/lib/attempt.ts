@@ -38,7 +38,7 @@ export function isFailedAttempt<Data>(
  * }
  * ```
  */
-export function attempt<Result>(callback: () => Result): Attempt<Result> {
+export function attempt<Data>(callback: () => Data): Attempt<Data> {
   try {
     const data = callback()
     return { success: true, data }
@@ -47,9 +47,9 @@ export function attempt<Result>(callback: () => Result): Attempt<Result> {
   }
 }
 
-async function resolveAsync<Result>(
-  maybePromise: Result | Promise<Result>
-): Promise<Attempt<Result>> {
+async function resolveAsync<Data>(
+  maybePromise: Data | Promise<Data>
+): Promise<Attempt<Data>> {
   if (maybePromise instanceof Promise) {
     return maybePromise
       .then(resolveAsync)
@@ -78,8 +78,8 @@ async function resolveAsync<Result>(
  * }
  * ```
  */
-export function attemptAsync<Result>(
-  callback: () => Promise<Result>
-): Promise<Attempt<Result>> {
+export function attemptAsync<Data>(
+  callback: () => Promise<Data>
+): Promise<Attempt<Data>> {
   return resolveAsync(callback())
 }

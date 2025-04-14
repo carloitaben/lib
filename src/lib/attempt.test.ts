@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, test, vi } from "vitest"
+import { describe, expect, test, vi } from "vitest"
 import type { AttemptError, AttemptSuccess } from "./attempt"
 import { attempt, attemptAsync } from "./attempt"
 
