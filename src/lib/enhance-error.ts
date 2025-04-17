@@ -1,11 +1,36 @@
 import { attempt } from "./attempt"
 
-export function withEnhancedError<Args extends unknown[], Result>(
-  fn: (...args: Args) => Result
-) {
-  let name = fn.name
+function stringify(value: unknown): string {
+  if (typeof value === "function") {
+    return `${value.name || "anonymous"}()`
+  }
 
-  function enhanced(...args: Args) {
+  if (typeof value === "object") {
+    if (value === null) {
+      return "null"
+    }
+
+    if (Array.isArray(value)) {
+      return `[${value.map((value) => stringify(value)).join(", ")}]`
+    }
+
+    return JSON.stringify(
+      Object.fromEntries(
+        Object.entries(value).map(([key, value]) => [key, stringify(value)])
+      )
+    )
+  }
+
+  const result = attempt(() => JSON.stringify(value))
+
+  return result.success ? result.data : "(unserializable)"
+}
+
+export function withEnhancedError<Args extends unknown[], Result>(
+  fn: (...args: Args) => Result,
+  displayName: string
+) {
+  return function enhanced(...args: Args) {
     try {
       return fn(...args)
     } catch (error) {
@@ -13,22 +38,11 @@ export function withEnhancedError<Args extends unknown[], Result>(
         error.message =
           error.message +
           "\n\n" +
-          `  - Function name: ${name}${
-            fn.name === name ? "(inherited)" : ""
-          }\n` +
-          `  - Function args: ${JSON.stringify(args)}`
+          `  - Function name: ${displayName}\n` +
+          `  - Function args: ${stringify(args)}`
       }
 
       throw error
     }
   }
-
-  return Object.assign(enhanced, {
-    get displayName() {
-      return name
-    },
-    set displayName(displayName: string) {
-      name = displayName
-    },
-  })
 }
