@@ -3,22 +3,26 @@ export type AttemptSuccess<Data> = {
   data: Data
 }
 
-export type AttemptError = {
+export type AttemptError<Error = unknown> = {
   success: false
-  error: unknown
+  error: Error
 }
 
-export type Attempt<Data> = AttemptSuccess<Data> | AttemptError
+export type Attempt<Data, Error = unknown> =
+  | AttemptSuccess<Data>
+  | AttemptError<Error>
 
-export function isSuccessfulAttempt<Data>(
-  attempt: Attempt<Data>
+export type AttemptErrorFn<Error = unknown> = (error: Error) => void
+
+export function isSuccessfulAttempt<Data, Error = unknown>(
+  attempt: Attempt<Data, Error>
 ): attempt is AttemptSuccess<Data> {
   return attempt.success === true
 }
 
-export function isFailedAttempt<Data>(
-  attempt: Attempt<Data>
-): attempt is AttemptError {
+export function isFailedAttempt<Data, Error = unknown>(
+  attempt: Attempt<Data, Error>
+): attempt is AttemptError<Error> {
   return attempt.success === false
 }
 
@@ -38,21 +42,23 @@ export function isFailedAttempt<Data>(
  * }
  * ```
  */
-export function attempt<Data>(callback: () => Data): Attempt<Data> {
+export function attempt<Data, Error = unknown>(
+  callback: () => Data
+): Attempt<Data, Error> {
   try {
     const data = callback()
     return { success: true, data }
   } catch (error) {
-    return { success: false, error }
+    return { success: false, error: error as Error }
   }
 }
 
-async function resolveAsync<Data>(
+async function resolveAsync<Data, Error = unknown>(
   maybePromise: Data | Promise<Data>
-): Promise<Attempt<Data>> {
+): Promise<Attempt<Data, Error>> {
   if (maybePromise instanceof Promise) {
     return maybePromise
-      .then(resolveAsync)
+      .then((data) => resolveAsync<Data, Error>(data))
       .catch((error) => ({ success: false, error }))
   }
 
@@ -78,8 +84,8 @@ async function resolveAsync<Data>(
  * }
  * ```
  */
-export function attemptAsync<Data>(
+export function attemptAsync<Data, Error = unknown>(
   callback: () => Promise<Data>
-): Promise<Attempt<Data>> {
-  return resolveAsync(callback())
+): Promise<Attempt<Data, Error>> {
+  return resolveAsync<Data, Error>(callback())
 }
