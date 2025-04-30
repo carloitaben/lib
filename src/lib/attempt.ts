@@ -53,6 +53,24 @@ export function attempt<Data, Error = unknown>(
   }
 }
 
+/**
+ * Wraps a function in `attempt`.
+ *
+ * @example
+ * ```ts
+ * const safeParse = attemptDecorator(JSON.parse)
+ * const resultFoo = safeParse("foo")
+ * const resultBar = safeParse("bar")
+ * ```
+ */
+export function attemptDecorator<Args extends unknown[], Data, Error = unknown>(
+  callback: (...args: Args) => Data
+) {
+  return function decorator(...args: Args): Attempt<Data, Error> {
+    return attempt(() => callback(...args))
+  }
+}
+
 async function resolveAsync<Data, Error = unknown>(
   maybePromise: Data | Promise<Data>
 ): Promise<Attempt<Data, Error>> {
@@ -88,4 +106,24 @@ export function attemptAsync<Data, Error = unknown>(
   callback: () => Promise<Data>
 ): Promise<Attempt<Data, Error>> {
   return resolveAsync<Data, Error>(callback())
+}
+
+/**
+ * Wraps a function in `attemptAsync`.
+ *
+ * @example
+ * ```ts
+ * const safeParseAsync = attemptAsyncDecorator(async (data: string) => JSON.parse(data))
+ * const resultFoo = await safeParse("foo")
+ * const resultBar = await safeParse("bar")
+ * ```
+ */
+export function attemptAsyncDecorator<
+  Args extends unknown[],
+  Data,
+  Error = unknown
+>(callback: (...args: Args) => Promise<Data>) {
+  return function decorator(...args: Args): Promise<Attempt<Data, Error>> {
+    return attemptAsync(() => callback(...args))
+  }
 }
