@@ -1,13 +1,13 @@
 import { describe, expect, test, vi } from "vitest"
-import { withEnhancedError } from "./enhance-error"
+import { errorDecorator } from "./error-decorator"
 
-describe(withEnhancedError.name, () => {
+describe(errorDecorator.name, () => {
   const fn = vi.fn((...args: unknown[]) => {
     void args
     throw Error()
   })
 
-  const enhancedFn = withEnhancedError(fn, "enhancedFn")
+  const enhancedFn = errorDecorator(fn, "enhancedFn")
 
   test("calls the wrapped function", () => {
     expect(() => enhancedFn()).toThrow()

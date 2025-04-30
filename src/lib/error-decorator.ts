@@ -26,7 +26,7 @@ function stringify(value: unknown): string {
   return result.success ? result.data : "(unserializable)"
 }
 
-export function withEnhancedError<Args extends unknown[], Result>(
+export function errorDecorator<Args extends unknown[], Result>(
   fn: (...args: Args) => Result,
   displayName: string
 ) {
