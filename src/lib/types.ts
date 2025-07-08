@@ -24,3 +24,5 @@ export type Prettify<T> = {
 export type ValueOf<T> = T[keyof T]
 
 export type Suggest<Suggestion extends string> = Suggestion | (string & {})
+
+export type Require<T, K extends keyof T> = T & { [P in K]-?: T[P] }
