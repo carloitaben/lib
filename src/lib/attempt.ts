@@ -27,6 +27,20 @@ export function isFailedAttempt<Data, Error = unknown>(
 }
 
 /**
+ * Creates an `AttemptSuccess`.
+ */
+export function success<Data>(data: Data): AttemptSuccess<Data> {
+  return { success: true, data }
+}
+
+/**
+ * Creates an `AttemptError`.
+ */
+export function fail<Error>(error: Error): AttemptError<Error> {
+  return { success: false, error }
+}
+
+/**
  * Attempts to synchronously execute a function.
  * If the function throws an error, it catches the error and returns it as a value,
  * similar to the [Errors as Values pattern](https://jessewarden.com/2021/04/errors-as-values.html).
@@ -47,9 +61,9 @@ export function attempt<Data, Error = unknown>(
 ): Attempt<Data, Error> {
   try {
     const data = callback()
-    return { success: true, data }
+    return success(data)
   } catch (error) {
-    return { success: false, error: error as Error }
+    return fail(error as Error)
   }
 }
 
@@ -77,13 +91,10 @@ async function resolveAsync<Data, Error = unknown>(
   if (maybePromise instanceof Promise) {
     return maybePromise
       .then((data) => resolveAsync<Data, Error>(data))
-      .catch((error) => ({ success: false, error }))
+      .catch((error) => fail<Error>(error))
   }
 
-  return {
-    success: true,
-    data: maybePromise,
-  }
+  return success(maybePromise)
 }
 
 /**
