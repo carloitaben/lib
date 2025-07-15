@@ -40,6 +40,10 @@ export function fail<Error>(error: Error): AttemptError<Error> {
   return { success: false, error }
 }
 
+function defaultNarrow<Error = unknown>(error: unknown) {
+  return error as Error
+}
+
 /**
  * Attempts to synchronously execute a function.
  * If the function throws an error, it catches the error and returns it as a value,
@@ -75,13 +79,13 @@ export function fail<Error>(error: Error): AttemptError<Error> {
  */
 export function attempt<Data, Error = unknown>(
   callback: () => Data,
-  onError?: (error?: unknown) => Error
+  narrow: (error: unknown) => Error = defaultNarrow<Error>
 ): Attempt<Data, Error> {
   try {
     const data = callback()
     return success(data)
   } catch (error) {
-    return onError ? fail(onError(error)) : fail(error as Error)
+    return fail(narrow(error))
   }
 }
 
@@ -97,21 +101,21 @@ export function attempt<Data, Error = unknown>(
  */
 export function attemptDecorator<Args extends unknown[], Data, Error = unknown>(
   callback: (...args: Args) => Data,
-  onError?: (error?: unknown) => Error
+  narrow: (error: unknown) => Error = defaultNarrow<Error>
 ) {
   return function decorator(...args: Args): Attempt<Data, Error> {
-    return attempt(() => callback(...args), onError)
+    return attempt(() => callback(...args), narrow)
   }
 }
 
 async function resolveAsync<Data, Error = unknown>(
   maybePromise: Data | Promise<Data>,
-  onError?: (error?: unknown) => Error
+  narrow: (error: unknown) => Error = defaultNarrow<Error>
 ): Promise<Attempt<Data, Error>> {
   if (maybePromise instanceof Promise) {
     return maybePromise
       .then((data) => resolveAsync<Data, Error>(data))
-      .catch((error) => (onError ? fail(onError(error)) : fail<Error>(error)))
+      .catch((error) => fail(narrow(error)))
   }
 
   return success(maybePromise)
@@ -135,7 +139,7 @@ async function resolveAsync<Data, Error = unknown>(
  *
  * @example
  * Narrowing the error type
- * 
+ *
  * ```ts
  * const result = await attemptAsync(
  *   async () => JSON.parse(data),
@@ -152,9 +156,9 @@ async function resolveAsync<Data, Error = unknown>(
  */
 export function attemptAsync<Data, Error = unknown>(
   callback: () => Promise<Data>,
-  onError?: (error?: unknown) => Error
+  narrow: (error: unknown) => Error = defaultNarrow<Error>
 ): Promise<Attempt<Data, Error>> {
-  return resolveAsync<Data, Error>(callback(), onError)
+  return resolveAsync<Data, Error>(callback(), narrow)
 }
 
 /**
@@ -173,9 +177,9 @@ export function attemptAsyncDecorator<
   Error = unknown
 >(
   callback: (...args: Args) => Promise<Data>,
-  onError?: (error?: unknown) => Error
+  narrow: (error: unknown) => Error = defaultNarrow<Error>
 ) {
   return function decorator(...args: Args): Promise<Attempt<Data, Error>> {
-    return attemptAsync(() => callback(...args), onError)
+    return attemptAsync(() => callback(...args), narrow)
   }
 }
