@@ -18,6 +18,15 @@ describe(attempt.name, () => {
     expect((result as AttemptError).error).toBeInstanceOf(Error)
   })
 
+  test("error narrowing", () => {
+    const result = attempt(
+      () => mock(true),
+      () => new SyntaxError()
+    )
+
+    expect((result as AttemptError).error).toBeInstanceOf(SyntaxError)
+  })
+
   test("success", () => {
     const result = attempt(() => mock(false))
     expect(mock).toHaveBeenCalled()
@@ -45,6 +54,15 @@ describe(attemptAsync.name, () => {
     const result = await attemptAsync(() => mock(true))
     expect(result.success).toBe(false)
     expect((result as AttemptError).error).toBeInstanceOf(Error)
+  })
+
+  test("error narrowing", async () => {
+    const result = await attemptAsync(
+      () => mock(true),
+      () => new SyntaxError()
+    )
+
+    expect((result as AttemptError).error).toBeInstanceOf(SyntaxError)
   })
 
   test("success", async () => {

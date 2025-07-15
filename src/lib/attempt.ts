@@ -55,15 +55,33 @@ export function fail<Error>(error: Error): AttemptError<Error> {
  *   result.error
  * }
  * ```
+ *
+ * @example
+ * Narrowing the error type
+ *
+ * ```ts
+ * const result = attempt(
+ *   () => JSON.parse(data),
+ *   (error) => new SyntaxError("Invalid JSON", { cause: error })
+ * )
+ *
+ * if (result.success) {
+ *   result.data
+ * } else {
+ *   result.error
+ *   //     ^? SyntaxError
+ * }
+ * ```
  */
 export function attempt<Data, Error = unknown>(
-  callback: () => Data
+  callback: () => Data,
+  onError?: (error?: unknown) => Error
 ): Attempt<Data, Error> {
   try {
     const data = callback()
     return success(data)
   } catch (error) {
-    return fail(error as Error)
+    return onError ? fail(onError(error)) : fail(error as Error)
   }
 }
 
@@ -78,20 +96,22 @@ export function attempt<Data, Error = unknown>(
  * ```
  */
 export function attemptDecorator<Args extends unknown[], Data, Error = unknown>(
-  callback: (...args: Args) => Data
+  callback: (...args: Args) => Data,
+  onError?: (error?: unknown) => Error
 ) {
   return function decorator(...args: Args): Attempt<Data, Error> {
-    return attempt(() => callback(...args))
+    return attempt(() => callback(...args), onError)
   }
 }
 
 async function resolveAsync<Data, Error = unknown>(
-  maybePromise: Data | Promise<Data>
+  maybePromise: Data | Promise<Data>,
+  onError?: (error?: unknown) => Error
 ): Promise<Attempt<Data, Error>> {
   if (maybePromise instanceof Promise) {
     return maybePromise
       .then((data) => resolveAsync<Data, Error>(data))
-      .catch((error) => fail<Error>(error))
+      .catch((error) => (onError ? fail(onError(error)) : fail<Error>(error)))
   }
 
   return success(maybePromise)
@@ -112,11 +132,29 @@ async function resolveAsync<Data, Error = unknown>(
  *   result.error
  * }
  * ```
+ *
+ * @example
+ * Narrowing the error type
+ * 
+ * ```ts
+ * const result = await attemptAsync(
+ *   async () => JSON.parse(data),
+ *   (error) => new SyntaxError("Invalid JSON", { cause: error })
+ * )
+ *
+ * if (result.success) {
+ *   result.data
+ * } else {
+ *   result.error
+ *   //     ^? SyntaxError
+ * }
+ * ```
  */
 export function attemptAsync<Data, Error = unknown>(
-  callback: () => Promise<Data>
+  callback: () => Promise<Data>,
+  onError?: (error?: unknown) => Error
 ): Promise<Attempt<Data, Error>> {
-  return resolveAsync<Data, Error>(callback())
+  return resolveAsync<Data, Error>(callback(), onError)
 }
 
 /**
@@ -133,8 +171,11 @@ export function attemptAsyncDecorator<
   Args extends unknown[],
   Data,
   Error = unknown
->(callback: (...args: Args) => Promise<Data>) {
+>(
+  callback: (...args: Args) => Promise<Data>,
+  onError?: (error?: unknown) => Error
+) {
   return function decorator(...args: Args): Promise<Attempt<Data, Error>> {
-    return attemptAsync(() => callback(...args))
+    return attemptAsync(() => callback(...args), onError)
   }
 }
