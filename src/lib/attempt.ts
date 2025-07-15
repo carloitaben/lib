@@ -95,8 +95,26 @@ export function attempt<Data, Error = unknown>(
  * @example
  * ```ts
  * const safeParse = attemptDecorator(JSON.parse)
- * const resultFoo = safeParse("foo")
- * const resultBar = safeParse("bar")
+ * const result = safeParse(data)
+ * ```
+ *
+ * @example
+ * Narrowing the error type
+ *
+ * ```ts
+ * const safeParse = attemptDecorator(
+ *   JSON.parse,
+ *   (error) => new SyntaxError("Invalid JSON", { cause: error })
+ * )
+ *
+ * const result = safeParse(data)
+ *
+ * if (result.success) {
+ *   result.data
+ * } else {
+ *   result.error
+ *   //     ^? SyntaxError
+ * }
  * ```
  */
 export function attemptDecorator<Args extends unknown[], Data, Error = unknown>(
@@ -167,8 +185,26 @@ export function attemptAsync<Data, Error = unknown>(
  * @example
  * ```ts
  * const safeParseAsync = attemptAsyncDecorator(async (data: string) => JSON.parse(data))
- * const resultFoo = await safeParse("foo")
- * const resultBar = await safeParse("bar")
+ * const result = await safeParseAsync(data)
+ * ```
+ *
+ * @example
+ * Narrowing the error type
+ *
+ * ```ts
+ * const safeParseAsync = attemptAsyncDecorator(
+ *   async (data: string) => JSON.parse(data),
+ *   (error) => new SyntaxError("Invalid JSON", { cause: error })
+ * )
+ *
+ * const result = await safeParseAsync(data)
+ *
+ * if (result.success) {
+ *   result.data
+ * } else {
+ *   result.error
+ *   //     ^? SyntaxError
+ * }
  * ```
  */
 export function attemptAsyncDecorator<
