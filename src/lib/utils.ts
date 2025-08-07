@@ -20,7 +20,7 @@
  */
 export function isKeyOf<T extends Record<PropertyKey, unknown>>(
   object: T,
-  value: unknown
+  value: unknown,
 ): value is keyof T {
   switch (typeof value) {
     case "string":
@@ -29,5 +29,11 @@ export function isKeyOf<T extends Record<PropertyKey, unknown>>(
       return value in object
     default:
       return false
+  }
+}
+
+export function record<T extends string[]>(...values: T) {
+  return Object.fromEntries(values.map((value) => [value, value])) as {
+    [K in T[number]]: K
   }
 }

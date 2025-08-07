@@ -13,5 +13,8 @@
   },
   "dependencies": {
     "ts-deepmerge": "^7.0.2"
+  },
+  "prettier": {
+    "semi": false
   }
 }
