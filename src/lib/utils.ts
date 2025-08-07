@@ -32,6 +32,38 @@ export function isKeyOf<T extends Record<PropertyKey, unknown>>(
   }
 }
 
+/**
+ * Creates an object where each key is a value from the provided arguments,
+ * and each value is the same as the key.
+ *
+ * This can be useful for creating a mapping of string constants to themselves.
+ *
+ * @example
+ * Basic usage
+ *
+ * ```ts
+ * const colors = record("red", "green", "blue")
+ *
+ * console.log(colors.red)   // "red"
+ * console.log(colors.green) // "green"
+ * console.log(colors.blue)  // "blue"
+ * ```
+ *
+ * @example
+ * Type safety
+ *
+ * ```ts
+ * const directions = record("up", "down", "left", "right")
+ *
+ * function move(direction: keyof typeof directions) {
+ *   console.log(`Moving ${direction}`)
+ * }
+ *
+ * move(directions.up)    // Valid
+ * move(directions.down)  // Valid
+ * move("forward")        // Error
+ * ```
+ */
 export function record<T extends string[]>(...values: T) {
   return Object.fromEntries(values.map((value) => [value, value])) as {
     [K in T[number]]: K
