@@ -69,3 +69,75 @@ export function record<T extends string[]>(...values: T) {
     [K in T[number]]: K
   }
 }
+
+export type EnsureOptions<K, V> = {
+  key: K
+  set: (key: K) => V
+}
+
+export function ensure<K, V>(
+  map: Map<K, V>,
+  { key, set }: EnsureOptions<K, V>,
+): V
+
+export function ensure<K extends WeakKey, V>(
+  weakMap: WeakMap<K, V>,
+  { key, set }: EnsureOptions<K, V>,
+): V
+
+export function ensure(
+  map: Map<unknown, unknown> | WeakMap<WeakKey, unknown>,
+  { key, set }: EnsureOptions<any, unknown>,
+) {
+  return map.has(key) ? map.get(key) : map.set(key, set(key)).get(key)
+}
+
+export type MemoOptions = {
+  lru?: number
+  ttl?: number
+}
+
+export function memo<T extends unknown[], U>(
+  fn: (...args: T) => U,
+  { lru = Infinity, ttl = Infinity }: MemoOptions,
+) {
+  const cache = new Map<string, U>()
+  return (...args: T) =>
+    ensure(cache, {
+      key: JSON.stringify(args),
+      set: () => fn(...args),
+    })
+}
+
+export function share<T extends unknown[], U>(fn: (...args: T) => Promise<U>) {
+  let flight: U | undefined = undefined
+  return async (...args: T) => {
+    if (!flight) {
+      flight = await fn(...args).finally(() => (flight = undefined))
+    }
+    return flight
+  }
+}
+
+export function once<T extends unknown[], U>(fn: (...args: T) => U) {
+  let ran = false
+  let value: U
+  return (...args: T) => {
+    if (!ran) {
+      ran = true
+      value = fn(...args)
+    }
+    return value
+  }
+}
+
+export function lazy<T>(fn: () => T) {
+  return once(fn.bind(null))
+}
+
+export function tap<T>(effect: (value: T) => void) {
+  return (value: T) => {
+    effect(value)
+    return value
+  }
+}
